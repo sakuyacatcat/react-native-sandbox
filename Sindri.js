@@ -1,11 +1,11 @@
 import axios from "axios";
-import Config from "react-native-config";
 
-const API_KEY = Config.SINDRI_API_KEY || "";
+const API_KEY = process.env.EXPO_PUBLIC_SINDRI_API_KEY || "";
 const API_URL_PREFIX =
-  Config.SINDRI_API_URL_PREFIX || "https://sindri.app/api/";
+  process.env.EXPO_PUBLIC_SINDRI_API_URL_PREFIX || "https://sindri.app/api/";
 const API_VERSION = "v1";
 const API_URL = API_URL_PREFIX.concat(API_VERSION);
+const CIRCUIT_ID = process.env.EXPO_PUBLIC_SINDRI_CIRCUIT_ID || "";
 
 const headersJson = {
   Accept: "application/json",
@@ -36,7 +36,7 @@ const parseToml = (tomlString) => {
   const lines = tomlString.split(/\r?\n/);
 
   lines.forEach((line) => {
-    if (line.trim().startWith("#") || line.trim() === "") return;
+    if (line.trim().startsWith("#") || line.trim() === "") return;
     const [key, value] = line.split("=").map((s) => s.trim());
     if (value === "true") {
       result[key] = true;
@@ -54,17 +54,18 @@ const parseToml = (tomlString) => {
 
 export const generateProof = async (input) => {
   try {
-    const circuitId = Config.SINDRI_CIRCUIT_ID || "";
+    const circuitId = CIRCUIT_ID;
     console.log("Proving circuit with id: ", circuitId);
 
-    const tomlString = `input = ${input}`;
-    const proofInput = parseToml(tomlString);
+    const proofInput = `input = ${input}`;
+    console.log(proofInput);
     const proveResponse = await axios.post(
-      `${API_URL}/circuit/${circuitId}/prove`,
-      { proof_intpu: proofInput },
+      API_URL + `/circuit/${circuitId}/prove`,
+      { proof_input: proofInput },
       { headers: headersJson, validateStatus: (status) => status === 201 }
     );
     const proofId = proveResponse.data.proof_id;
+    console.log("Proof id: ", proofId);
 
     const proofDetailResponse = await pollForStatus(`/proof/${proofId}/detail`);
     const proofDetailStatus = proveResponse.data.status;
